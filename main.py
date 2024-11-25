@@ -1,6 +1,5 @@
 import requests
 from colorama import Fore
-import json
 import time
 from datetime import datetime, timezone
 
@@ -33,13 +32,13 @@ def register_node(node_id, hardware_id):
     register_url = f"{API_BASE_URL}/nodes/{node_id}"
     ip_address = fetch_ip_address()
     print(f"[{datetime.now(timezone.utc).isoformat()}] 正在注册节点，IP: {ip_address}, 硬件 ID: {hardware_id}")
-    
+
     payload = {"ipAddress": ip_address, "hardwareId": hardware_id}
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {auth_token}"
     }
-    
+
     response = requests.post(register_url, headers=headers, json=payload)
     response.raise_for_status()
     data = response.json()
@@ -51,7 +50,7 @@ def start_session(node_id):
     auth_token = read_auth_token()
     start_session_url = f"{API_BASE_URL}/nodes/{node_id}/start-session"
     print(f"[{datetime.now(timezone.utc).isoformat()}] 正在启动节点 {node_id} 的会话，可能需要一段时间...")
-    
+
     headers = {"Authorization": f"Bearer {auth_token}"}
     response = requests.post(start_session_url, headers=headers)
     response.raise_for_status()
@@ -64,7 +63,7 @@ def stop_session(node_id):
     auth_token = read_auth_token()
     stop_session_url = f"{API_BASE_URL}/nodes/{node_id}/stop-session"
     print(f"[{datetime.now(timezone.utc).isoformat()}] 正在停止节点 {node_id} 的会话")
-    
+
     headers = {"Authorization": f"Bearer {auth_token}"}
     response = requests.post(stop_session_url, headers=headers)
     response.raise_for_status()
@@ -77,16 +76,17 @@ def ping_node(node_id):
     auth_token = read_auth_token()
     ping_url = f"{API_BASE_URL}/nodes/{node_id}/ping"
     print(f"[{datetime.now(timezone.utc).isoformat()}] 正在 Ping 节点 {node_id}")
-    
+
     headers = {"Authorization": f"Bearer {auth_token}"}
     response = requests.post(ping_url, headers=headers)
     response.raise_for_status()
     data = response.json()
-    
-    last_ping = data["pings"][-1]["timestamp"]
-    log_message = (f"[{datetime.now(timezone.utc).isoformat()}] Ping 响应, "
-                   f"ID: {data['_id']}, 节点 ID: {data['nodeId']}, 最后 Ping 时间: {last_ping}")
-    print(log_message)
+
+    print(f"[{datetime.now(timezone.utc).isoformat()}] Ping 响应内容:", data)  # 打印完整响应内容
+    if data.get("status") == "ok":
+        print(f"[{datetime.now(timezone.utc).isoformat()}] Ping 成功: 节点 {node_id} 状态正常。")
+    else:
+        print(f"[{datetime.now(timezone.utc).isoformat()}] Ping 数据无效或字段缺失: {data}")
     return data
 
 # 显示标题
@@ -100,14 +100,13 @@ def display_header():
                ╔╝╔╗╚╣╚═╝║╚══╣╚╩═║╔═╗║╚═╝║
                ╚═╝╚═╩═══╩═══╩═══╩╝─╚╩═══╝
     """
-    
+
     print(custom_ascii_art)
     print(f"{Fore.YELLOW}我的gihub：github.com/Gzgod")
     print("我的推特：推特雪糕战神@Hy78516012  ")
     print("TG群：https://t.me/+FZHZVA_gEOJhOWM1  ")
     print("TG群（土狗交流）：https://t.me/+0X5At4YG0_k0ZThl  ")
     print(f"\n")
-    
 
 # 主函数
 def run_all():
@@ -115,21 +114,21 @@ def run_all():
         display_header()
         node_id, hardware_id = read_node_and_hardware_id()
         print(f"[{datetime.now(timezone.utc).isoformat()}] 读取到的节点 ID: {node_id}, 硬件 ID: {hardware_id}")
-        
+
         registration_response = register_node(node_id, hardware_id)
         print(f"[{datetime.now(timezone.utc).isoformat()}] 节点注册完成。响应:", registration_response)
-        
+
         start_session_response = start_session(node_id)
         print(f"[{datetime.now(timezone.utc).isoformat()}] 会话已启动。响应:", start_session_response)
-        
+
         print(f"[{datetime.now(timezone.utc).isoformat()}] 发送初始 Ping...")
         ping_node(node_id)
-        
+
         while True:
             print(f"[{datetime.now(timezone.utc).isoformat()}] 发送 Ping...")
             ping_node(node_id)
             time.sleep(60)
-    
+
     except Exception as error:
         print(f"[{datetime.now(timezone.utc).isoformat()}] 发生错误:", error)
 
